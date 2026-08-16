@@ -1,0 +1,46 @@
+# TideGauge 潮汐计 — a personal usage & billing gauge for the DeepSeek Harness.
+#
+# The node half (lib/index.js) auto-discovers LLM providers and serves one
+# /tide-gauge/state route (per-provider balance + per-model pricing); the
+# browser half (lib/client.js) renders the top-right icon + right-side panel.
+#
+# Applied after the in-box web bundle (dsh-base + dsh-web-app), so the profile's
+# own cordis.patch.yml and any --patch overlays still win over this row.
+
+- insert:
+    - id: tide-gauge
+      name: dsh-tide-gauge
+      config:
+        # Additional billing providers beyond the built-in DeepSeek rule.
+        # Each entry: provider (id), label?, kind ('deepseek'|'openai-compatible'),
+        # balanceUrl?, currency?, apiKeyEnv? (default DEEPSEEK_API_KEY), refreshMs?.
+        #
+        # Example — an OpenAI-compatible gateway via pi-ai:
+        # providers:
+        #   - provider: my-gateway
+        #     label: My Gateway
+        #     kind: openai-compatible
+        #     balanceUrl: https://gateway.example.com/v1/credits
+        #     currency: USD
+        #     apiKeyEnv: MY_GATEWAY_API_KEY
+        #     refreshMs: 600000
+        providers: []
+
+        # Per-model pricing for cost estimation. Key = model id; price is per
+        # ONE MILLION tokens. Fill in your real prices — the plugin only
+        # computes cost for models listed here.
+        #
+        # Example:
+        # pricing:
+        #   deepseek-v4-flash:
+        #     label: DeepSeek-V4-Flash
+        #     currency: CNY
+        #     inputPer1M: 1.0
+        #     outputPer1M: 2.0
+        #     cacheReadPer1M: 0.1
+        #   gpt-4o-mini:
+        #     label: GPT-4o mini
+        #     currency: USD
+        #     inputPer1M: 0.15
+        #     outputPer1M: 0.60
+        pricing: {}
