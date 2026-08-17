@@ -1,6 +1,6 @@
 # 潮汐计 · TideGauge
 
-DeepSeek Harness 的用量与账单浮层插件。它在 Web / 桌面会话头右上角注入一枚波浪图标，点击后展开右侧浮层，实时呈现 **本会话的模型用量、上下文占用、会话统计、各 provider 账户余额与费用估算**。
+DeepSeek Harness 的用量与账单浮层插件。它在 Web 界面右上角注入一枚**常显**波浪图标（主页与进入会话后均显示），点击后展开右侧浮层：进入会话后实时呈现 **本会话的模型用量、上下文占用、会话统计、各 provider 账户余额与费用估算**；主页上则显示账户余额与费用估算，本会话用量需进入会话后查看。
 
 > 「TideGauge / 验潮仪」取自海洋学术语，用于持续记录水位随时间的变化。本插件以同样的思路，持续记录 token 用量与余额的“水位”。
 
@@ -27,26 +27,27 @@ DeepSeek Harness 的用量与账单浮层插件。它在 Web / 桌面会话头�
 | **费用估算** | 按 `config.pricing` 价格表，将本会话 token 用量折算为费用 |
 | **密钥安全** | 密钥仅在主机侧解析，余额请求由主机发出，浏览器只接收结果，密钥永不进入浏览器 |
 
-## 安装
+## 安装（一条命令，无需构建授权）
 
-本插件是标准的 `dsh.bundle` + `dsh.client` 双面包，适配任意 profile（`web` / `desktop` / 自定义）。三种安装方式等价：
+本插件是纯 JS 的 `dsh.bundle` + `dsh.client` 双面包，**没有构建步骤**，因此从 npm、GitHub 或 tarball 安装都不需要构建授权（无需配置 pnpm 的 `allowBuilds`）。以下方式任选其一：
 
 ```sh
-# 从 npm（发布后可用）
-dsh plugin --profile <任意profile> add dsh-tide-gauge
+# ① npm（发布后可用，推荐）
+dsh plugin --profile web add dsh-tide-gauge
 
-# 从本地目录（开发态）
-dsh plugin --profile web add ./dsh-tide-gauge
+# ② GitHub（拉取源码，无需构建授权）
+dsh plugin --profile web add github:DzDenzel/dsh-tide-gauge
 
-# DSH Desktop（桌面版使用 desktop profile）
-dsh plugin --profile desktop add dsh-tide-gauge
+# ③ tarball（离线交付）
+cd dsh-tide-gauge && pnpm pack   # 生成 dsh-tide-gauge-<version>.tgz
+dsh plugin --profile web add ./dsh-tide-gauge-<version>.tgz
 ```
 
-安装后**重启对应 profile**（重启 `dsh web` 进程，或完全退出并重开 DSH Desktop）。会话头右上角出现波浪图标即表示加载成功。
+`dsh plugin --profile <name> <args...>` 在 profile 目录内转发给 pnpm，并把声明了 `dsh.bundle` 的包自动追加到该 profile 的 `dsh.profile.bundles`。安装后**重启对应 profile**（重启 `dsh web` 进程），右上角出现波浪图标即表示加载成功（主页与进入会话后均显示）。本地开发时可直接 `dsh plugin --profile web add ./dsh-tide-gauge`。
 
 ## 使用
 
-1. 点击会话头右上角的波浪图标，展开右侧浮层；再次点击或按右上角「×」关闭。
+1. 点击右上角的波浪图标，展开右侧浮层；再次点击或按右上角「×」关闭。主页（未进入会话）时图标浮于右上角，进入会话后位于会话头「Session log」旁。
 2. 「账户余额」区右上角的「刷新」按钮会立即重新拉取余额；各 provider 余额也会按 `refreshMs` 自动缓存刷新。
 3. 当配置了多个 provider 时，「账户余额」区顶部会出现以配置名称命名的胶囊按钮，点击即可在 provider 间切换，查看对应 provider 的余额与刷新时间。
 
@@ -126,7 +127,7 @@ dsh plugin --profile desktop add dsh-tide-gauge
 本插件由主机侧与浏览器侧两半组成：
 
 - **主机侧（`lib/index.js`）**：纯函数 Cordis 插件（零 import），注入 `webServer`。仅收录配置了余额端点的 provider，在主机上拉取并缓存余额，并通过 `/tide-gauge/state` 路由对外提供数据；密钥永不进入浏览器。
-- **浏览器侧（`lib/client.js`）**：`window.__ModuleLoader__.load` 惰性 CJS 包，注入 `slots`，注册到 `conversation.session.header.utilities` 槽位（右上角），负责渲染图标与浮层，并通过 `fetch("/tide-gauge/state")` 拉取余额与计价数据。
+- **浏览器侧（`lib/client.js`）**：`window.__ModuleLoader__.load` 惰性 CJS 包，注入 `slots`，注册到 `conversation.session.header.utilities` 槽位（进入会话后会话头右上角）与 `shell.overlay` 槽位（主页常显入口），负责渲染图标与浮层，并通过 `fetch("/tide-gauge/state")` 拉取余额与计价数据。
 
 ```text
 ┌──────────────┐   GET /tide-gauge/state   ┌─────────────────┐
